@@ -122,7 +122,8 @@ public class ComparisonServer {
     stateCostDetails = loadDetailedCSV("C:/Users/96248/IdeaProjects/MadData/src/cost_of_living_in_the_us_updated.csv");
 
     // Start a simple web server
-    port(8080);
+    int port = Integer.parseInt(System.getenv("PORT"));
+    port(port);
 
     System.out.println("Static files are being served from: " + new File("src/main/resources").getAbsolutePath());
 
@@ -131,11 +132,10 @@ public class ComparisonServer {
       return null;
     });
 
+    // Define routes
+    get("/", (req, res) -> "Hello, Heroku!");
 
-    get("/", (req, res) ->{
-      res.redirect("WebPage.html");
-      return null;
-    });
+    System.out.println("Server running on port: " + port);
 
     // Debugging route to list static files
     get("/list-files", (req, res) -> {
