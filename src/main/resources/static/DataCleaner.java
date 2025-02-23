@@ -11,6 +11,59 @@ import java.util.Map;
 
 public class DataCleaner {
 
+  public static Map<String, Double> loadCountrySalary(String csvFile) {
+    Map<String, Double> countrySalaryMap = new HashMap<>();
+
+    try (CSVReader reader = new CSVReader(new FileReader(csvFile))) {
+      String[] row;
+      boolean isHeader = true;
+
+      while ((row = reader.readNext()) != null) {
+        if (isHeader) {
+          isHeader = false;
+          continue; // Skip header row
+        }
+
+        String country = row[0];  // First column: Country name
+        double salary = Double.parseDouble(row[1]);  // Second column: Salary in USD
+
+        countrySalaryMap.put(country, salary);
+      }
+    } catch (IOException | CsvValidationException e) {
+      e.printStackTrace();
+    }
+
+    System.out.println("✅ Loaded country salary data from " + csvFile);
+    return countrySalaryMap;
+  }
+
+  // ✅ Method to load state cost of living data into a HashMap
+  public static Map<String, Double> loadStateCosts(String csvFile) {
+    Map<String, Double> stateCostMap = new HashMap<>();
+
+    try (CSVReader reader = new CSVReader(new FileReader(csvFile))) {
+      String[] row;
+      boolean isHeader = true;
+
+      while ((row = reader.readNext()) != null) {
+        if (isHeader) {
+          isHeader = false;
+          continue; // Skip header row
+        }
+
+        String state = row[0];  // First column: State name
+        double avgCost = Double.parseDouble(row[1]);  // Second column: Average cost of living
+
+        stateCostMap.put(state, avgCost);
+      }
+    } catch (IOException | CsvValidationException e) {
+      e.printStackTrace();
+    }
+
+    System.out.println("✅ Loaded state cost of living data from " + csvFile);
+    return stateCostMap;
+  }
+
   static class Accumulator {
     double sum = 0.0;
     int count = 0;
@@ -27,7 +80,7 @@ public class DataCleaner {
 
   public static void main(String[] args) {
     String inputfile1 = "C:/Users/96248/IdeaProjects/MadData/src/salary_data.csv";
-    String outputfile1 = "C:/Users/96248/IdeaProjects/MadData/src/yearly_salary.csv";
+    String outputfile1 = "C:/Users/96248/IdeaProjects/MadData/src/clean_salary_data.csv";
 
     String inputfile2 = "C:/Users/96248/IdeaProjects/MadData/src/cost_of_living_in_the_us_updated.csv";
     String outputfile2 = "C:/Users/96248/IdeaProjects/MadData/src/clean_cost_of_living_in_the_us_updated.csv";
