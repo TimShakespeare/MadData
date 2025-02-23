@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Select a State</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
     <style>
         body {
@@ -24,27 +25,36 @@
             align-items: center;
             width: 100%;
             max-width: 1200px;
+            overflow: hidden; /* Prevent unwanted scrolling */
         }
 
         object {
-            width: 80vw; /* Default width */
+            width: 80vw; /* Default width for desktops */
             height: auto;
-            max-width: 100%; /* Prevent overflow */
+            max-width: 100%;
             transition: all 0.3s ease-in-out;
         }
 
-        /* Specific styles for smaller screens */
+        /* Ensure full width on mobile and prevent weird resizing */
         @media (max-width: 768px) {
+            #map-container {
+                width: 100%;
+                padding: 10px;
+            }
+
             object {
-                width: 95vw; /* Increase width for better visibility */
+                width: 95vw;  /* Full width usage */
+                height: auto;
             }
         }
 
+        /* Fullscreen for very small screens */
         @media (max-width: 480px) {
             object {
-                width: 100vw; /* Full width on very small devices */
+                width: 100vw;
             }
         }
+
 
     </style>
 </head>
@@ -439,30 +449,26 @@
 
     function adjustMapSize() {
         let mapObject = document.getElementById("us-map");
+        let container = document.getElementById("map-container");
+
+        if (!mapObject || !container) return;
+
         let screenWidth = window.innerWidth;
 
-        // Check if it's a mobile device
-        let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-        if (isMobile) {
-            mapObject.style.width = "95vw"; // Full width for better touch usability
+        if (screenWidth < 768) {
+            mapObject.style.width = "95vw";
         } else {
-            // Adjust width dynamically based on screen size
-            if (screenWidth < 600) {
-                mapObject.style.width = "90vw"; // Small phones
-            } else if (screenWidth < 900) {
-                mapObject.style.width = "80vw"; // Medium tablets
-            } else {
-                mapObject.style.width = "70vw"; // Desktops
-            }
+            mapObject.style.width = "80vw";
         }
+
+        // Ensure it's fully visible
+        container.style.overflow = "visible";
     }
 
-    // Adjust map size on window resize
+    // Adjust on resize
     window.addEventListener("resize", adjustMapSize);
-
-    // Adjust on initial load
     document.addEventListener("DOMContentLoaded", adjustMapSize);
+
 
 
 </script>
