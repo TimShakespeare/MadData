@@ -13,6 +13,8 @@
     The frontend features an interactive SVG map, allowing users to select states dynamically.
     We implemented <b>JavaScript (Fetch API)</b> to communicate with the backend, updating the UI accordingly.
     The data is preprocessed and stored in <b>CSV files</b>, which are parsed and analyzed by Java.
+    Datasets used: https://www.kaggle.com/datasets/raphaelabayomi/us-cost-of-living-2021
+https://www.kaggle.com/datasets/zedataweaver/global-salary-data
 </p>
 
 <h1>Challenges we ran into</h1>
