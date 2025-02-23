@@ -1,13 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:https="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Select a State</title>
+
     <style>
         body {
+            color: rgb(255,255,255);
+            background-color: rgb(38,66,77);
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
         }
+
+        #map-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-width:1200px;
+        }
+
         object {
             width: 80%;
             height: auto;
@@ -15,10 +33,12 @@
     </style>
 </head>
 <body>
-<h2>Select a State by Clicking on the Map</h2>
+<h2>Click a State You Want to Live</h2>
 
 <!-- Load SVG Map -->
-<object id="us-map" type="image/svg+xml" data="Blank_US_Map_(states_only).svg"></object>
+<div id="map-container">
+    <object id="us-map" type="image/svg+xml" data="Blank_US_Map_(states_only).svg"></object>
+</div>
 
 <p>Selected State: <span id="selected-state">None</span></p>
 
@@ -169,6 +189,8 @@
     <button id="submit-button">Submit</button>
 </p>
 
+<div id="results-container"></div>
+
 
 
 <script>
@@ -190,7 +212,7 @@
                 });
 
                 state.addEventListener("mouseover", function () {
-                    state.style.fill = "orange";
+                    state.style.fill = "rgb(255, 164, 91)";
                 });
 
                 state.addEventListener("mouseout", function () {
@@ -201,47 +223,206 @@
 
         document.getElementById("submit-button").addEventListener("click", function () {
             let nationality = document.getElementById("nationality").value;
-            let selectedState = document.getElementById("selected-state").innerText;
+            let selectedState = document.getElementById("selected-state").innerText.trim().toUpperCase();
 
-            if (!selectedState || selectedState === "None") {
+            if (!selectedState || selectedState === "NONE") {
                 alert("Please select a state first.");
                 return;
             }
 
-            selectedState = selectedState.toUpperCase();
+            console.log("Submitting state:", selectedState);
+            console.log("Submitting nationality:", nationality);
 
             fetch("/compare", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ state: selectedState, nationality: nationality })
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({state: selectedState, nationality: nationality})
             })
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) {
                         alert("Error: " + data.error);
                     } else {
-                        let resultHtml = `
-                            <html>
-                            <head><title>Comparison Results</title></head>
-                            <body>
-                                <h1>Comparison Results</h1>
-                                <p><b>State:</b> ${data.state}</p>
-                                <p><b>Nationality:</b> ${data.nationality}</p>
-                                <p><b>Cost of Living:</b> $${data.cost}</p>
-                                <p><b>Average Salary:</b> $${data.salary}</p>
-                                <h2>${data.ratio >= 1.0 ? "✅ Your salary covers the cost of living!" : "❌ Your salary is insufficient!"}</h2>
-                                <br><a href="/">Go Back</a>
-                            </body>
-                            </html>
-                        `;
-                        document.open();
-                        document.write(resultHtml);
-                        document.close();
+                        console.log("Received data:", data);
+
+                        // Clear previous results before adding new results
+                        let resultsContainer = document.getElementById("results-container");
+                        resultsContainer.innerHTML = "";
+
+                        // Add results
+                        let resultDiv = document.createElement("div");
+                        resultDiv.innerHTML = `
+                <h1 style="color: gold;">Comparison Results</h1>
+                <p><b>State:</b> ${data.state}</p>
+                <p><b>Nationality:</b> ${data.nationality}</p>
+                <p><b>Cost of Living:</b> $${data.cost.toFixed(2)}</p>
+                <p><b>Average Salary:</b> $${data.salary.toFixed(2)}</p>
+                <h2 style="color: ${data.ratio >= 1.0 ? 'green' : 'red'};">
+                    ${data.ratio >= 1.0 ? "✅ Your salary covers the cost of living!" : "❌ Your salary is insufficient!"}
+                </h2>
+                <canvas id="costChart" width="400" height="200"></canvas>
+            `;
+
+                        resultsContainer.appendChild(resultDiv);
+
+                        // Ensure the chart renders only AFTER the canvas is created
+                        setTimeout(() => {
+                            updateChart(data.costBreakdown, data.salary);
+                        }, 500);
                     }
                 })
                 .catch(error => console.error("Fetch error:", error));
         });
     });
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+<!-- Canvas for the Bar Chart -->
+<canvas id="costChart" width="400" height="200"></canvas>
+
+<script>
+    function updateChart(costBreakdown, salary) {
+        let labels = ["Housing", "Food", "Transportation", "Healthcare", "Other Necessities", "Childcare", "Taxes", "Salary"];
+        let costs = [...costBreakdown, salary]; // Append salary at the end
+
+        console.log("Updating Chart", costs); // Debugging line
+
+        let canvas = document.getElementById("costChart");
+        if (!canvas) {
+            console.error("Canvas not found!");
+            return;
+        }
+
+        let ctx = canvas.getContext("2d");
+
+        // Destroy previous chart instance if it exists
+        if (window.costChartInstance) {
+            window.costChartInstance.destroy();
+        }
+
+        window.costChartInstance = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Cost Breakdown vs Salary",
+                    data: costs,
+                    backgroundColor: [
+                        "rgba(255, 99, 132, 0.5)", // Housing
+                        "rgba(54, 162, 235, 0.5)", // Food
+                        "rgba(255, 206, 86, 0.5)", // Transportation
+                        "rgba(75, 192, 192, 0.5)", // Healthcare
+                        "rgba(153, 102, 255, 0.5)", // Other Necessities
+                        "rgba(255, 159, 64, 0.5)", // Childcare
+                        "rgba(199, 199, 199, 0.5)", // Taxes
+                        "rgba(0, 128, 0, 0.7)" // Salary
+                    ],
+                    borderColor: [
+                        "rgba(255, 99, 132, 1)",
+                        "rgba(54, 162, 235, 1)",
+                        "rgba(255, 206, 86, 1)",
+                        "rgba(75, 192, 192, 1)",
+                        "rgba(153, 102, 255, 1)",
+                        "rgba(255, 159, 64, 1)",
+                        "rgba(199, 199, 199, 1)",
+                        "rgba(0, 128, 0, 1)"
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: "white",  // ✅ Change legend text color
+                            font: {
+                                size: 14
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: "white",  // ✅ Change X-axis label color
+                            font: {
+                                size: 14
+                            }
+                        },
+                        grid: {
+                            color: "rgba(255, 255, 255, 0.2)" // ✅ Change X-axis grid line color
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            color: "white",  // ✅ Change Y-axis label color
+                            font: {
+                                size: 14
+                            }
+                        },
+                        grid: {
+                            color: "rgba(255, 255, 255, 0.2)" // ✅ Change Y-axis grid line color
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log("Chart Updated Successfully!");
+    }
+
+
+
+
+    document.getElementById("submit-button").addEventListener("click", function () {
+        let nationality = document.getElementById("nationality").value;
+        let selectedState = document.getElementById("selected-state").innerText.trim().toUpperCase();
+
+        if (!selectedState || selectedState === "NONE") {
+            alert("Please select a state first.");
+            return;
+        }
+
+        console.log("Submitting state:", selectedState);
+        console.log("Submitting nationality:", nationality);
+
+        fetch("/compare", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ state: selectedState, nationality: nationality })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert("Error: " + data.error);
+                } else {
+                    console.log("Received data:", data);
+
+                    // Update the results container instead of replacing the page
+                    let resultsContainer = document.getElementById("results-container");
+                    resultsContainer.innerHTML = `
+                <h1>Comparison Results</h1>
+                <p><b>State:</b> ${data.state}</p>
+                <p><b>Nationality:</b> ${data.nationality}</p>
+                <p><b>Cost of Living:</b> $${data.cost}</p>
+                <p><b>Average Salary:</b> $${data.salary}</p>
+                <h2>${data.ratio >= 1.0 ? "✅ Your salary covers the cost of living!" : "❌ Your salary is insufficient!"}</h2>
+                <canvas id="costChart" width="400" height="200"></canvas>
+            `;
+
+                    setTimout(() => {
+                        // Call function to update the chart
+                        updateChart(data.costBreakdown, data.salary);
+                    }, 500);
+                }
+            })
+            .catch(error => console.error("Fetch error:", error));
+    });
+
+</script>
+
+
 </body>
 </html>

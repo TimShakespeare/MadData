@@ -2,17 +2,19 @@ import com.google.gson.Gson;
 
 import static spark.Spark.*;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 
 public class ComparisonServer {
 
   private static Map<String, Double> countryToSalary;
   private static Map<String, Double> stateToCost;
+  private static Map<String, List<Double>> stateCostDetails;
 
   private static Map<String, Double> loadCSV(String filePath) {
     Map<String, Double> data = new HashMap<>();
@@ -41,6 +43,75 @@ public class ComparisonServer {
     return data;
   }
 
+  public static Map<String, List<Double>> loadDetailedCSV(String filePath) {
+    Map<String, List<List<Double>>> tempStateData = new HashMap<>();
+
+    try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+      String line;
+      boolean isFirstLine = true;
+
+      while ((line = br.readLine()) != null) {
+        if (isFirstLine) {  // Skip the header
+          isFirstLine = false;
+          continue;
+        }
+
+        // Use regex-based split to correctly handle quotes and commas
+        String[] parts = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+
+        if (parts.length < 13) { // Ensure we have enough columns
+          System.err.println("Skipping row due to insufficient data: " + line);
+          continue;
+        }
+
+        String state = parts[1].trim(); // Extract the state abbreviation (column index 1)
+        List<Double> selectedValues = new ArrayList<>();
+
+        try {
+          for (int i = 6; i <= 12; i++) { // Extract correct cost columns
+            selectedValues.add(Double.parseDouble(parts[i].trim()));
+          }
+        } catch (NumberFormatException e) {
+          System.err.println("Skipping row due to invalid number format: " + line);
+          continue;
+        }
+
+        tempStateData.putIfAbsent(state, new ArrayList<>());
+        tempStateData.get(state).add(selectedValues);
+      }
+    } catch (IOException e) {
+      System.err.println("Error reading CSV file: " + e.getMessage());
+    }
+
+    // Compute the mean for each state
+    Map<String, List<Double>> stateCostDetails = new HashMap<>();
+
+    for (Map.Entry<String, List<List<Double>>> entry : tempStateData.entrySet()) {
+      String state = entry.getKey();
+      List<List<Double>> allEntries = entry.getValue();
+
+      int numEntries = allEntries.size();
+      int numColumns = allEntries.get(0).size();
+
+      List<Double> meanValues = new ArrayList<>(Collections.nCopies(numColumns, 0.0));
+
+      for (List<Double> values : allEntries) {
+        for (int i = 0; i < numColumns; i++) {
+          meanValues.set(i, meanValues.get(i) + values.get(i));
+        }
+      }
+
+      for (int i = 0; i < numColumns; i++) {
+        meanValues.set(i, meanValues.get(i) / numEntries);
+      }
+
+      stateCostDetails.put(state, meanValues);
+    }
+
+    return stateCostDetails;
+  }
+
+
   public static void main(String[] args) {
 
     staticFiles.location("/static");
@@ -48,6 +119,7 @@ public class ComparisonServer {
     // Load CSV data into memory
     countryToSalary = loadCSV("C:/Users/96248/IdeaProjects/MadData/src/clean_salary_data.csv");
     stateToCost = loadCSV("C:/Users/96248/IdeaProjects/MadData/src/clean_cost_of_living_in_the_us_updated.csv");
+    stateCostDetails = loadDetailedCSV("C:/Users/96248/IdeaProjects/MadData/src/cost_of_living_in_the_us_updated.csv");
 
     // Start a simple web server
     port(8080);
@@ -60,7 +132,10 @@ public class ComparisonServer {
     });
 
 
-    get("/", (req, res) -> "Hello World");
+    get("/", (req, res) ->{
+      res.redirect("WebPage.html");
+      return null;
+    });
 
     // Debugging route to list static files
     get("/list-files", (req, res) -> {
@@ -86,8 +161,8 @@ public class ComparisonServer {
       }
 
       Double cost = stateToCost.get(state);
-
       Double salary = countryToSalary.get(nationality);
+      List<Double> costDetails = stateCostDetails.get(state);
 
       if (cost == null || salary == null) {
         return "<html><body><h2>Error: Data not found!</h2>" +
@@ -96,6 +171,9 @@ public class ComparisonServer {
                 "<a href='/'>Go back</a></body></html>";
       }
 
+      Map<String, Object> response = new HashMap<>();
+      response.put("cost", cost);
+      response.put("costBreakdown", costDetails);
 
       double ratio = salary / cost;
       String resultMessage = (ratio >= 1.0)
@@ -124,6 +202,9 @@ public class ComparisonServer {
         return new Gson().toJson(Map.of("error", "Missing parameters!"));
       }
 
+      state = state.trim().toUpperCase();
+      System.out.println("Processed state: " + state);
+
       Double cost = stateToCost.get(state);
       Double salary = countryToSalary.get(nationality);
 
@@ -139,6 +220,7 @@ public class ComparisonServer {
       response.put("nationality", nationality);
       response.put("cost", cost);
       response.put("salary", salary);
+      response.put("costBreakdown", stateCostDetails.get(state));
       response.put("ratio", ratio);
 
       return new Gson().toJson(response);
