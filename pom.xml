@@ -59,19 +59,19 @@
 
     <build>
         <plugins>
-            <!-- Example plugin for JavaFX, if you're using JavaFX -->
-            <!--
             <plugin>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-maven-plugin</artifactId>
-                <version>0.0.8</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version>
                 <configuration>
-                    <mainClass>org.example.Main</mainClass>
-                    <javafxVersion>17.0.2</javafxVersion>
-                    <modules>javafx-controls</modules>
+                    <archive>
+                        <manifest>
+                            <mainClass>ComparisonServer</mainClass>
+                        </manifest>
+                    </archive>
                 </configuration>
             </plugin>
-            -->
         </plugins>
     </build>
+
 </project>
