@@ -23,13 +23,29 @@
             justify-content: center;
             align-items: center;
             width: 100%;
-            max-width:1200px;
+            max-width: 1200px;
         }
 
         object {
-            width: 80%;
+            width: 80vw; /* Default width */
             height: auto;
+            max-width: 100%; /* Prevent overflow */
+            transition: all 0.3s ease-in-out;
         }
+
+        /* Specific styles for smaller screens */
+        @media (max-width: 768px) {
+            object {
+                width: 95vw; /* Increase width for better visibility */
+            }
+        }
+
+        @media (max-width: 480px) {
+            object {
+                width: 100vw; /* Full width on very small devices */
+            }
+        }
+
     </style>
 </head>
 <body>
