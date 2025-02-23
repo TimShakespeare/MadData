@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Select a State</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
     <style>
         body {
@@ -24,38 +23,13 @@
             justify-content: center;
             align-items: center;
             width: 100%;
-            max-width: 1200px;
-            overflow: hidden; /* Prevent unwanted scrolling */
+            max-width:1200px;
         }
 
         object {
-            width: 80vw; /* Default width for desktops */
+            width: 80%;
             height: auto;
-            max-width: 100%;
-            transition: all 0.3s ease-in-out;
         }
-
-        /* Ensure full width on mobile and prevent weird resizing */
-        @media (max-width: 768px) {
-            #map-container {
-                width: 100%;
-                padding: 10px;
-            }
-
-            object {
-                width: 95vw;  /* Full width usage */
-                height: auto;
-            }
-        }
-
-        /* Fullscreen for very small screens */
-        @media (max-width: 480px) {
-            object {
-                width: 100vw;
-            }
-        }
-
-
     </style>
 </head>
 <body>
@@ -446,30 +420,6 @@
             })
             .catch(error => console.error("Fetch error:", error));
     });
-
-    function adjustMapSize() {
-        let mapObject = document.getElementById("us-map");
-        let container = document.getElementById("map-container");
-
-        if (!mapObject || !container) return;
-
-        let screenWidth = window.innerWidth;
-
-        if (screenWidth < 768) {
-            mapObject.style.width = "95vw";
-        } else {
-            mapObject.style.width = "80vw";
-        }
-
-        // Ensure it's fully visible
-        container.style.overflow = "visible";
-    }
-
-    // Adjust on resize
-    window.addEventListener("resize", adjustMapSize);
-    document.addEventListener("DOMContentLoaded", adjustMapSize);
-
-
 
 </script>
 
