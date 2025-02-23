@@ -437,6 +437,34 @@
             .catch(error => console.error("Fetch error:", error));
     });
 
+    function adjustMapSize() {
+        let mapObject = document.getElementById("us-map");
+        let screenWidth = window.innerWidth;
+
+        // Check if it's a mobile device
+        let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        if (isMobile) {
+            mapObject.style.width = "95vw"; // Full width for better touch usability
+        } else {
+            // Adjust width dynamically based on screen size
+            if (screenWidth < 600) {
+                mapObject.style.width = "90vw"; // Small phones
+            } else if (screenWidth < 900) {
+                mapObject.style.width = "80vw"; // Medium tablets
+            } else {
+                mapObject.style.width = "70vw"; // Desktops
+            }
+        }
+    }
+
+    // Adjust map size on window resize
+    window.addEventListener("resize", adjustMapSize);
+
+    // Adjust on initial load
+    document.addEventListener("DOMContentLoaded", adjustMapSize);
+
+
 </script>
 
 
