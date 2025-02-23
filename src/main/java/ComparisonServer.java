@@ -2,10 +2,7 @@ import com.google.gson.Gson;
 
 import static spark.Spark.*;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -16,15 +13,21 @@ public class ComparisonServer {
   private static Map<String, Double> stateToCost;
   private static Map<String, List<Double>> stateCostDetails;
 
-  private static Map<String, Double> loadCSV(String filePath) {
+  private static Map<String, Double> loadCSV(String fileName) {
     Map<String, Double> data = new HashMap<>();
     try {
-      List<String> lines = Files.readAllLines(Paths.get(filePath));
-      boolean isFirstLine = true;
+      InputStream inputStream = ComparisonServer.class.getClassLoader().getResourceAsStream(fileName);
+      if (inputStream == null) {
+        throw new FileNotFoundException("File not found in resources: " + fileName);
+      }
 
-      for (String line : lines) {
-        if(isFirstLine) {
-          isFirstLine = false;
+      BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+      String line;
+      boolean isFirstLine = true;  // ✅ Skip header row
+
+      while ((line = reader.readLine()) != null) {
+        if (isFirstLine) {
+          isFirstLine = false; // ✅ Skip the header row
           continue;
         }
 
@@ -37,16 +40,23 @@ public class ComparisonServer {
         }
       }
     } catch (Exception e) {
-      System.err.println("Error loading CSV: " + filePath);
+      System.err.println("Error loading CSV: " + fileName);
       e.printStackTrace();
     }
     return data;
   }
 
-  public static Map<String, List<Double>> loadDetailedCSV(String filePath) {
+  public static Map<String, List<Double>> loadDetailedCSV(String fileName) {
     Map<String, List<List<Double>>> tempStateData = new HashMap<>();
 
-    try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+    // Load the file as an InputStream
+    InputStream inputStream = ComparisonServer.class.getClassLoader().getResourceAsStream(fileName);
+    if (inputStream == null) {
+      System.err.println("Error: File not found in resources - " + fileName);
+      return Collections.emptyMap();
+    }
+
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
       String line;
       boolean isFirstLine = true;
 
@@ -69,7 +79,7 @@ public class ComparisonServer {
 
         try {
           for (int i = 6; i <= 12; i++) { // Extract correct cost columns
-            selectedValues.add(Double.parseDouble(parts[i].trim()));
+            selectedValues.add(Double.parseDouble(parts[i].trim().replaceAll("[^0-9.]", "")));
           }
         } catch (NumberFormatException e) {
           System.err.println("Skipping row due to invalid number format: " + line);
@@ -117,13 +127,14 @@ public class ComparisonServer {
     staticFiles.location("/static");
 
     // Load CSV data into memory
-    countryToSalary = loadCSV("C:/Users/96248/IdeaProjects/MadData/src/clean_salary_data.csv");
-    stateToCost = loadCSV("C:/Users/96248/IdeaProjects/MadData/src/clean_cost_of_living_in_the_us_updated.csv");
-    stateCostDetails = loadDetailedCSV("C:/Users/96248/IdeaProjects/MadData/src/cost_of_living_in_the_us_updated.csv");
-
+    countryToSalary = loadCSV("clean_salary_data.csv");
+    stateToCost = loadCSV("clean_cost_of_living_in_the_us_updated.csv");
+    stateCostDetails = loadDetailedCSV("cost_of_living_in_the_us_updated.csv");
     // Start a simple web server
-    int port = Integer.parseInt(System.getenv("PORT"));
+// Use Heroku's assigned port or default to 4567 for local development
+    int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
     port(port);
+
 
     System.out.println("Static files are being served from: " + new File("src/main/resources").getAbsolutePath());
 
