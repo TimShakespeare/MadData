@@ -1,3 +1,4 @@
+![image](https://github.com/user-attachments/assets/4dfa0edc-f094-4780-ba77-c259ce4bbe54)
 <h1>What it does</h1>
 <p>
     Our project is an interactive web application that allows users to compare the cost of living and average salary across different U.S. states based on their nationality.
